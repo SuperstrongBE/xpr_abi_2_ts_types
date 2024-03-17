@@ -1,0 +1,19 @@
+{
+  "name": "xpr_abi_cli",
+  "version": "0.0.1",
+  "description": "A little supa dupa usefull CLI tool for XPR that allow you to generates TS types from Smart contract ABI",
+  "main": "index.js",
+  "author": "RockerOne",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@proton/js": "^28.0.0",
+    "commander": "^12.0.0",
+    "eosjs": "^22.1.0",
+    "node-fetch": "^3.3.2",
+    "typescript": "^5.4.2"
+  }
+}
