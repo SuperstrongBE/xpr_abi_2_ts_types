@@ -1,13 +1,61 @@
 #!/usr/bin/env node
 
-require('dotenv').config();
-const { Command } = require("commander");
+require("dotenv").config();
+const {Command} = require("commander");
 const {RpcInterfaces, Serialize, Api} = require("eosjs");
 const packageJson = require("../package.json");
 
 const program = new Command();
 
-async function loadAbi(account_name:string, rpcUrl:string):Promise< void | { account_name:string,abi: any}> {
+type TypeMap = {
+  types: string[];
+  target: string;
+};
+
+const typesMaps: TypeMap[] = [
+  {
+    types: [
+      "uint8",
+      "int8",
+      "uint32",
+      "int32",
+      "float32",
+      "uint64",
+      "int64",
+      "float64",
+      "uint128",
+      "int128",
+      "float128",
+      "uint256",
+      "int256",
+      "float256",
+      "uint512",
+      "int512",
+    ],
+    target: "number",
+  },
+  {
+    types: ["string", "name", "asset", "symbol"],
+    target: "string",
+  },
+  {
+    types: ["bool"],
+    target: "boolean",
+  },
+];
+
+const TYPE_FIELD_TEMPLATE = (name: string, type: string, level: number = 0) =>
+  `${name}:${type}`.padStart(level, "  ");
+const MODULE_FIELD_TEMPLATE = (
+  module: string,
+  content: string,
+  level: number = 0
+) => `export type ${module} = {${content}}`.padStart(level, "  ");
+
+async function loadAbi(
+  account_name: string,
+  rpcUrl: string
+): Promise<void | {account_name: string; abi: any}> {
   return fetch(`${rpcUrl}/v1/chain/get_abi`, {
     method: "POST",
     body: JSON.stringify({
@@ -26,113 +74,48 @@ async function loadAbi(account_name:string, rpcUrl:string):Promise< void | { acc
     });
 }
 
-function getActionFields(actionName:string, abiStructs:any) {
-  const findStruct = abiStructs.findLast((struct:any) => struct.name == actionName);
-  return findStruct.fields.map((field:{name:string,type:string}) => {
-    return "" + field.name + ":" + transformType(field.type) + ";";
+function getFields(lookupField: string, abiStructs: any) {
+  const findStruct = abiStructs.findLast(
+    (struct: any) => struct.name.indexOf(lookupField) > -1
+  );
+  if (!findStruct) return [];
+  return findStruct.fields.map((field: {name: string; type: string}) => {
+    return TYPE_FIELD_TEMPLATE(
+      field.name,
+      transformType(field.type, abiStructs)
+    );
   });
 }
 
-function transformType(type: string) {
+function transformType(type: string, abiStructs: any): string {
+  const rawType = type.replace("[]", "");
+  const arrayTypeRegexp = /\[\]$/g;
+  const isArray = arrayTypeRegexp.test(type);
+  const suffix = isArray ? "[]" : "";
+  const foundMap = typesMaps.findLast(map => map.types.indexOf(rawType) >= 0);
 
-  switch (type) {
-    case "string":
-      return "string";
-    case "string[]":
-      return "string[]";
-    case "name":
-      return "string";
-    case "name[]":
-      return "string[]";
-    case "asset":
-      return "string";
-    case "asset[]":
-      return "string[]";
-    case "symbol":
-      return "string";
-    case "symbol[]":
-      return "string[]";
-    case "uint8":
-      return "number";
-    case "int8":
-      return "number";
-    case "uint32":
-      return "number";
-    case "int32":
-      return "number";
-    case "float32":
-      return "number";
-    case "uint64":
-      return "number";
-    case "int64":
-      return "number";
-    case "float64":
-      return "number";
-    case "uint128":
-      return "number";
-    case "int128":
-      return "number";
-    case "float128":
-      return "number";
-    case "uint256":
-      return "number";
-    case "int256":
-      return "number";
-    case "float256":
-      return "number";
-    case "uint512":
-      return "number";
-    case "int512":
-      return "number";
-    case "float512":
-      return "number";
-    case "uint8[]":
-      return "number[]";
-    case "int8[]":
-      return "number[]";
-    case "uint32[]":
-      return "number[]";
-    case "int32[]":
-      return "number[]";
-    case "float32[]":
-      return "number[]";
-    case "uint64[]":
-      return "number[]";
-    case "int64[]":
-      return "number[]";
-    case "float64[]":
-      return "number[]";
-    case "uint128[]":
-      return "number[]";
-    case "int128[]":
-      return "number[]";
-    case "float128[]":
-      return "number[]";
-    case "uint256[]":
-      return "number[]";
-    case "int256[]":
-      return "number[]";
-    case "float256[]":
-      return "number[]";
-    case "uint512[]":
-      return "number[]";
-    case "int512[]":
-      return "number[]";
-    case "float512[]":
-      return "number[]";
+  if (foundMap) {
+    return `${foundMap.target}${suffix}`;
   }
+  const customType = getFields(rawType, abiStructs);
+  return `{\n  ${customType.join(";\n")}  \n}${suffix}`;
 }
 
-function formatDefinition(definitionName:string, field:string[]):string {
+function formatCustomFields(field: string[], isArray: boolean): string {
+  const suffix = isArray ? "[]" : "";
+  return `{\n      ${field.join(",\n    ")}\n      }${suffix}`;
+}
+
+function formatDefinition(definitionName: string, field: string[]): string {
   let str = '  "' + definitionName.replace(".", "_") + '": ';
   str += "{\n";
   str += "    ";
-  str += field.join("\n    ");
+  str += field.join(";\n    ");
   str += "\n  }";
   return str;
 }
 
-function wrapTypes(typeName:string, content:string):string {
+function wrapTypes(typeName: string, content: string): string {
   let str = "type ";
   str += typeName.replace(".", "_") + " = ";
   str += "{\n";
@@ -147,30 +130,52 @@ program
   .description("Description of your CLI tool")
   .option("-t, --testnet")
   .arguments("<name>")
-  .action(async (name: string,options:any) => {
-    const endpoint = options.testnet ? process.env.TESTNET_EP! : process.env.MAINNET_EP!;
-    
+  .action(async (name: string, options: any) => {
+    const endpoint = options.testnet
+      ? process.env.TESTNET_EP!
+      : process.env.MAINNET_EP!;
+
     const abi = await loadAbi(name, endpoint);
-    if (!abi || !abi.abi) return 
+    if (!abi || !abi.abi) return;
     const actionDefinitions = abi.abi.actions
-      .map((action:any) => {
+      .map((action: any) => {
         return formatDefinition(
           action.name,
-          getActionFields(action.name, abi.abi.structs)
+          getFields(action.name, abi.abi.structs)
         );
       })
       .join(",\n");
-    console.log(wrapTypes("Actions", actionDefinitions));
+    console.log(wrapTypes(`${name}_Actions`, actionDefinitions));
 
     const tableDefinitions = abi.abi.tables
-      .map((table:any) => {
+      .map((table: any) => {
         return formatDefinition(
           table.type,
-          getActionFields(table.type, abi.abi.structs)
+          getFields(table.type, abi.abi.structs)
         );
       })
       .join(",\n");
-    console.log(wrapTypes("Tables", tableDefinitions));
-    
+    console.log(wrapTypes(`${name}_Tables`, tableDefinitions));
+
+    console.log(`
+    export type Authorization = {
+      actor: string;
+      permission: string;
+  }`);
+
+    console.log(`
+    export type XPRAction<A extends keyof (${name}_Actions)>  {
+      account: '${name}';
+      name: A;
+      authorization: Authorization[];
+      data: ${name}_Actions[A]; 
+    }
+  `);
+    console.log(
+      `export type Tables<TableName extends keyof (${name}_Tables)> = ${name}_Tables[TableName];`
+    );
+    console.log(
+      `export type Actions<ActionName extends keyof (${name}_Actions)> = ${name}_Actions[ActionName];`
+    );
   })
   .parse(process.argv);
