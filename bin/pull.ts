@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-const {Command} = require("commander");
+require('dotenv').config();
+const { Command } = require("commander");
 const {RpcInterfaces, Serialize, Api} = require("eosjs");
 const packageJson = require("../package.json");
 
@@ -144,9 +145,12 @@ function wrapTypes(typeName:string, content:string):string {
 program
   .version(packageJson.version)
   .description("Description of your CLI tool")
+  .option("-t, --testnet")
   .arguments("<name>")
-  .action(async (name:string) => {
-    const abi = await loadAbi(name, "http://node-main.betxpr.com:8888");
+  .action(async (name: string,options:any) => {
+    const endpoint = options.testnet ? process.env.TESTNET_EP! : process.env.MAINNET_EP!;
+    
+    const abi = await loadAbi(name, endpoint);
     if (!abi || !abi.abi) return 
     const actionDefinitions = abi.abi.actions
       .map((action:any) => {
@@ -167,5 +171,6 @@ program
       })
       .join(",\n");
     console.log(wrapTypes("Tables", tableDefinitions));
+    console.log(endpoint,options)
   })
   .parse(process.argv);
