@@ -7,6 +7,4 @@ Run `yarn build` to compile from source
 Then run `npx ./dist/pull.js > ./path/to/folder/definition.ts nameofthecontract` and "Boom" it generate types from the smart contract `nameofthecontract`
 
 ## TODO
-- Add support for testnet with flag
-- Add .env file to make it more convenient
-- Fix some missing types conversion
+- Need support for custom types

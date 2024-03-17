@@ -28,13 +28,13 @@ async function loadAbi(account_name:string, rpcUrl:string):Promise< void | { acc
 
 function getActionFields(actionName:string, abiStructs:any) {
   const findStruct = abiStructs.findLast((struct:any) => struct.name == actionName);
-  const fields = {};
   return findStruct.fields.map((field:{name:string,type:string}) => {
     return "" + field.name + ":" + transformType(field.type) + ";";
   });
 }
 
-function transformType(type:string) {
+function transformType(type: string) {
+
   switch (type) {
     case "string":
       return "string";
@@ -171,6 +171,6 @@ program
       })
       .join(",\n");
     console.log(wrapTypes("Tables", tableDefinitions));
-    console.log(endpoint,options)
+    
   })
   .parse(process.argv);
