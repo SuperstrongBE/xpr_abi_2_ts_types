@@ -4,6 +4,9 @@ const {Command} = require("commander");
 const {RpcInterfaces, Serialize, Api} = require("eosjs");
 const packageJson = require("../package.json");
 
+const TN_EP = 'https://tn1.protonnz.com';
+const MN_EP = 'https://api.protonnz.com';
+
 const program = new Command();
 
 type TypeMap = {
@@ -148,8 +151,8 @@ program
   .arguments("<name>")
   .action(async (name: string, options: any) => {
     const endpoint = options.testnet
-      ? process.env.TESTNET_EP!
-      : process.env.MAINNET_EP!;
+      ? TN_EP!
+      : MN_EP!;
 
     const abi = await loadAbi(name, endpoint);
     if (!abi || !abi.abi) return;
