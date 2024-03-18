@@ -55,7 +55,7 @@ const MODULE_FIELD_TEMPLATE = (
 ) => `export type ${module} = {${content}}`.padStart(level, "  ");
 
 const ACTIONS_TYPE_TEMPLATE = (contractName:string,content:string) => `export const ${contractName} = {\n ${content} \n} `
-const ACTION_FUNCTION_TEMPLATE = (contractName:string,actionName:string,) => ` '${actionName}':(authorization:Authorization[],data:${contractName}_Actions['${actionName}']):XPRAction<'${actionName}'>=>({\n\taccount:'${contractName}',\n\tname:'${actionName}',\n\tauthorization,\n\data})`
+const ACTION_FUNCTION_TEMPLATE = (contractName:string,actionName:string,) => ` ${actionName.replace('.','_')}:(authorization:Authorization[],data:${contractName}_Actions['${actionName}']):XPRAction<'${actionName}'>=>({\n\taccount:'${contractName}',\n\tname:'${actionName}',\n\tauthorization,\n\data})`
 
 async function loadAbi(
   account_name: string,

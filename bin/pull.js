@@ -41,7 +41,7 @@ const typesMaps = [
 const TYPE_FIELD_TEMPLATE = (name, type, level = 0) => `${name}:${type}`.padStart(level, "  ");
 const MODULE_FIELD_TEMPLATE = (module, content, level = 0) => `export type ${module} = {${content}}`.padStart(level, "  ");
 const ACTIONS_TYPE_TEMPLATE = (contractName, content) => `export const ${contractName} = {\n ${content} \n} `;
-const ACTION_FUNCTION_TEMPLATE = (contractName, actionName) => ` '${actionName}':(authorization:Authorization[],data:${contractName}_Actions['${actionName}']):XPRAction<'${actionName}'>=>({\n\taccount:'${contractName}',\n\tname:'${actionName}',\n\tauthorization,\n\data})`;
+const ACTION_FUNCTION_TEMPLATE = (contractName, actionName) => ` ${actionName.replace('.', '_')}:(authorization:Authorization[],data:${contractName}_Actions['${actionName}']):XPRAction<'${actionName}'>=>({\n\taccount:'${contractName}',\n\tname:'${actionName}',\n\tauthorization,\n\data})`;
 async function loadAbi(account_name, rpcUrl) {
     return fetch(`${rpcUrl}/v1/chain/get_abi`, {
         method: "POST",
