@@ -11,7 +11,10 @@ Run
 to install the package
 
 Then run 
-```npx abi2ts nameofthecontract > ./your/path/to/definition.ts``` 
+```npx abi2ts nameofthecontract > ./your/path/to/definition.ts```
+or use the `-t` flag if your contract is on testnet
+```npx abi2ts nameofthecontract -t > ./your/path/to/definition.ts```
+
 and "Boom" it generate types from the smart contract `nameofthecontract`
 Now you can use 
 ```const someAction = nameofthecontract.nameOfTheAction(authorizationsArray,actionData)``` 
