@@ -52,6 +52,9 @@ const MODULE_FIELD_TEMPLATE = (
   level: number = 0
 ) => `export type ${module} = {${content}}`.padStart(level, "  ");
 
+const ACTIONS_TYPE_TEMPLATE = (contractName:string,content:string) => `export const ${contractName} = {\n ${content} \n} `
+const ACTION_FUNCTION_TEMPLATE = (contractName:string,actionName:string,) => ` ${actionName}:(authorization:Authorization[],data:${contractName}_Actions['${actionName}']):XPRAction<'${actionName}'>=>({\n\taccount:'${contractName}',\n\tname:'${actionName}',\n\tauthorization,\n\data})`
+
 async function loadAbi(
   account_name: string,
   rpcUrl: string
@@ -101,11 +104,13 @@ function transformType(type: string, abiStructs: any): string {
   return `{\n  ${customType.join(";\n")}  \n}${suffix}`;
 }
 
+//TODO create a template string const function
 function formatCustomFields(field: string[], isArray: boolean): string {
   const suffix = isArray ? "[]" : "";
   return `{\n      ${field.join(",\n    ")}\n      }${suffix}`;
 }
 
+//TODO create a template string const function
 function formatDefinition(definitionName: string, field: string[]): string {
   let str = '  "' + definitionName.replace(".", "_") + '": ';
   str += "{\n";
@@ -113,6 +118,18 @@ function formatDefinition(definitionName: string, field: string[]): string {
   str += field.join(";\n    ");
   str += "\n  }";
   return str;
+}
+
+function formateActionsFunction(contractName:string,actionName:string): string { 
+
+  return ACTION_FUNCTION_TEMPLATE(contractName, actionName);
+
+}
+
+function wrapActionsModule(contractName: string, content: string): string { 
+
+  return ACTIONS_TYPE_TEMPLATE(contractName, content);
+
 }
 
 function wrapTypes(typeName: string, content: string): string {
@@ -146,6 +163,14 @@ program
       })
       .join(",\n");
     console.log(wrapTypes(`${name}_Actions`, actionDefinitions));
+    
+    const actionFunctionsDefinitions = abi.abi.actions
+      .map((action: any) => {
+        return formateActionsFunction(name, action.name)
+        
+      })
+      .join(",\n");
+    console.log(wrapActionsModule(name, actionFunctionsDefinitions));
 
     const tableDefinitions = abi.abi.tables
       .map((table: any) => {
@@ -160,11 +185,11 @@ program
     console.log(`
     export type Authorization = {
       actor: string;
-      permission: string;
+      permission: "active"|"owner"|string;
   }`);
 
     console.log(`
-    export type XPRAction<A extends keyof (${name}_Actions)>  {
+    export type XPRAction<A extends keyof (${name}_Actions)>={
       account: '${name}';
       name: A;
       authorization: Authorization[];

@@ -1,8 +1,8 @@
 {
-  "name": "xpr_abi_cli",
+  "name": "@rockerone/abitypes",
   "version": "0.0.1",
   "description": "A little supa dupa usefull CLI tool for XPR that allow you to generates TS types from Smart contract ABI",
-  "main": "index.js",
+  "main": "dist/pull.js",
   "author": "RockerOne",
   "license": "MIT",
   "private": false,
