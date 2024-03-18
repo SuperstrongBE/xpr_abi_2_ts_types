@@ -1,6 +1,6 @@
 {
   "name": "@rockerone/abitypes",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A little supa dupa usefull CLI tool for XPR that allow you to generates TS types from Smart contract ABI",
   "main": "dist/pull.js",
   "author": "RockerOne",
@@ -16,5 +16,8 @@
     "eosjs": "^22.1.0",
     "node-fetch": "^3.3.2",
     "typescript": "^5.4.2"
+  },
+  "bin": {
+    "abi2ts": "bin/pull.js"
   }
 }

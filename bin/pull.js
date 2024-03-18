@@ -39,7 +39,7 @@ const typesMaps = [
 const TYPE_FIELD_TEMPLATE = (name, type, level = 0) => `${name}:${type}`.padStart(level, "  ");
 const MODULE_FIELD_TEMPLATE = (module, content, level = 0) => `export type ${module} = {${content}}`.padStart(level, "  ");
 const ACTIONS_TYPE_TEMPLATE = (contractName, content) => `export const ${contractName} = {\n ${content} \n} `;
-const ACTION_FUNCTION_TEMPLATE = (contractName, actionName) => ` ${actionName}:(authorization:Authorization[],data:${contractName}_Actions['${actionName}']):XPRAction<'${actionName}'>=>({\n\taccount:'${contractName}',\n\tname:'${actionName}',\n\tauthorization,\n\data})`;
+const ACTION_FUNCTION_TEMPLATE = (contractName, actionName) => ` '${actionName}':(authorization:Authorization[],data:${contractName}_Actions['${actionName}']):XPRAction<'${actionName}'>=>({\n\taccount:'${contractName}',\n\tname:'${actionName}',\n\tauthorization,\n\data})`;
 async function loadAbi(account_name, rpcUrl) {
     return fetch(`${rpcUrl}/v1/chain/get_abi`, {
         method: "POST",
@@ -85,7 +85,7 @@ function formatCustomFields(field, isArray) {
 }
 //TODO create a template string const function
 function formatDefinition(definitionName, field) {
-    let str = '  "' + definitionName.replace(".", "_") + '": ';
+    let str = '  "' + definitionName + '": ';
     str += "{\n";
     str += "    ";
     str += field.join(";\n    ");
@@ -100,7 +100,7 @@ function wrapActionsModule(contractName, content) {
 }
 function wrapTypes(typeName, content) {
     let str = "type ";
-    str += typeName.replace(".", "_") + " = ";
+    str += typeName + " = ";
     str += "{\n";
     str += content;
     str += "\n}";

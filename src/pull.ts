@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 require("dotenv").config();
 const {Command} = require("commander");
 const {RpcInterfaces, Serialize, Api} = require("eosjs");
@@ -53,7 +52,7 @@ const MODULE_FIELD_TEMPLATE = (
 ) => `export type ${module} = {${content}}`.padStart(level, "  ");
 
 const ACTIONS_TYPE_TEMPLATE = (contractName:string,content:string) => `export const ${contractName} = {\n ${content} \n} `
-const ACTION_FUNCTION_TEMPLATE = (contractName:string,actionName:string,) => ` ${actionName}:(authorization:Authorization[],data:${contractName}_Actions['${actionName}']):XPRAction<'${actionName}'>=>({\n\taccount:'${contractName}',\n\tname:'${actionName}',\n\tauthorization,\n\data})`
+const ACTION_FUNCTION_TEMPLATE = (contractName:string,actionName:string,) => ` '${actionName}':(authorization:Authorization[],data:${contractName}_Actions['${actionName}']):XPRAction<'${actionName}'>=>({\n\taccount:'${contractName}',\n\tname:'${actionName}',\n\tauthorization,\n\data})`
 
 async function loadAbi(
   account_name: string,
@@ -112,7 +111,7 @@ function formatCustomFields(field: string[], isArray: boolean): string {
 
 //TODO create a template string const function
 function formatDefinition(definitionName: string, field: string[]): string {
-  let str = '  "' + definitionName.replace(".", "_") + '": ';
+  let str = '  "' + definitionName + '": ';
   str += "{\n";
   str += "    ";
   str += field.join(";\n    ");
@@ -134,7 +133,7 @@ function wrapActionsModule(contractName: string, content: string): string {
 
 function wrapTypes(typeName: string, content: string): string {
   let str = "type ";
-  str += typeName.replace(".", "_") + " = ";
+  str += typeName + " = ";
   str += "{\n";
   str += content;
   str += "\n}";
