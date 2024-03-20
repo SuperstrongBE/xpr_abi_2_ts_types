@@ -3,6 +3,7 @@ require("dotenv").config();
 const {Command} = require("commander");
 const {RpcInterfaces, Serialize, Api} = require("eosjs");
 const packageJson = require("../package.json");
+const fs = require("fs");
 
 const TN_EP = 'https://tn1.protonnz.com';
 const MN_EP = 'https://api.protonnz.com';
@@ -13,6 +14,9 @@ type TypeMap = {
   types: string[];
   target: string;
 };
+
+type AbiResponse = {account_name: string; abi: any}
+
 
 const typesMaps: TypeMap[] = [
   {
@@ -60,7 +64,7 @@ const ACTION_FUNCTION_TEMPLATE = (contractName:string,actionName:string,) => ` $
 async function loadAbi(
   account_name: string,
   rpcUrl: string
-): Promise<void | {account_name: string; abi: any}> {
+):  Promise<AbiResponse | null> {
   return fetch(`${rpcUrl}/v1/chain/get_abi`, {
     method: "POST",
     body: JSON.stringify({
@@ -76,7 +80,30 @@ async function loadAbi(
     })
     .catch(e => {
       console.log("Error while fetching the ABI");
+      return null
     });
+}
+
+async function loadLocalAbi(account_name: string, abi_path: string): Promise<AbiResponse | null> {
+  
+  return new Promise((resolve,reject) => {
+   
+    fs.readFile(abi_path, "utf8", (error:any, data:string) => {
+      if (error) {
+        console.log(error);
+        return reject(null);
+      }
+      
+      return resolve( {
+        account_name,
+        abi:JSON.parse(data)
+      })
+    });
+
+  })
+  
+  
+
 }
 
 function getFields(lookupField: string, abiStructs: any) {
@@ -148,14 +175,17 @@ program
   .version(packageJson.version)
   .description("Description of your CLI tool")
   .option("-t, --testnet")
+  .option("-f, --file <char>")
   .arguments("<name>")
   .action(async (name: string, options: any) => {
     const endpoint = options.testnet
       ? TN_EP!
       : MN_EP!;
 
-    const abi = await loadAbi(name, endpoint);
-    if (!abi || !abi.abi) return;
+      let abi:AbiResponse | null = (options.file) ? await loadLocalAbi(name, options.file) : await loadAbi(name, endpoint);
+      console.log(abi)
+    if (!abi) return;
+    
     const actionDefinitions = abi.abi.actions
       .map((action: any) => {
         return formatDefinition(

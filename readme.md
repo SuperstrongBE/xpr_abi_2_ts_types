@@ -6,14 +6,25 @@ It's simple but usefull tool that pull abi from a XPRNertwork smart contract and
 This is the beta version, feel free to modify it and make a PR.
 
 ## How to use 
-Run 
-```yarn add @rockerone/abi2ts``` 
+
+### Install  
+```bash 
+yarn add @rockerone/abi2ts
+``` 
 to install the package
 
-Then run 
+#### Mainnet 
 ```npx abi2ts nameofthecontract > ./your/path/to/definition.ts```
-or use the `-t` flag if your contract is on testnet
+
+#### Testnet 
+Use the `-t` flag if your contract is on testnet
 ```npx abi2ts nameofthecontract -t > ./your/path/to/definition.ts```
+
+#### Testnet 
+Use the `-f` flag to generate from a local ABI file. Usefull for test suite
+```npx abi2ts nameofthecontract -f path/to/the/abifile.abi > ./your/path/to/definition.ts```
+
+
 
 and "Boom" it generate types from the smart contract `nameofthecontract`
 Now you can use 
