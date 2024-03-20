@@ -4,6 +4,7 @@ require("dotenv").config();
 const { Command } = require("commander");
 const { RpcInterfaces, Serialize, Api } = require("eosjs");
 const packageJson = require("../package.json");
+const fs = require("fs");
 const TN_EP = 'https://tn1.protonnz.com';
 const MN_EP = 'https://api.protonnz.com';
 const program = new Command();
@@ -58,6 +59,21 @@ async function loadAbi(account_name, rpcUrl) {
     })
         .catch(e => {
         console.log("Error while fetching the ABI");
+        return null;
+    });
+}
+async function loadLocalAbi(account_name, abi_path) {
+    return new Promise((resolve, reject) => {
+        fs.readFile(abi_path, "utf8", (error, data) => {
+            if (error) {
+                console.log(error);
+                return reject(null);
+            }
+            return resolve({
+                account_name,
+                abi: JSON.parse(data)
+            });
+        });
     });
 }
 function getFields(lookupField, abiStructs) {
@@ -113,13 +129,15 @@ program
     .version(packageJson.version)
     .description("Description of your CLI tool")
     .option("-t, --testnet")
+    .option("-f, --file <char>")
     .arguments("<name>")
     .action(async (name, options) => {
     const endpoint = options.testnet
         ? TN_EP
         : MN_EP;
-    const abi = await loadAbi(name, endpoint);
-    if (!abi || !abi.abi)
+    let abi = (options.file) ? await loadLocalAbi(name, options.file) : await loadAbi(name, endpoint);
+    console.log(abi);
+    if (!abi)
         return;
     const actionDefinitions = abi.abi.actions
         .map((action) => {
