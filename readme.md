@@ -20,13 +20,13 @@ to install the package
 Use the `-t` flag if your contract is on testnet
 ```npx abi2ts nameofthecontract -t > ./your/path/to/definition.ts```
 
-#### Testnet 
+#### Local 
 Use the `-f` flag to generate from a local ABI file. Usefull for test suite
 ```npx abi2ts nameofthecontract -f path/to/the/abifile.abi > ./your/path/to/definition.ts```
 
 
-
-and "Boom" it generate types from the smart contract `nameofthecontract`
+### Done!
+"Boom" you have now generate types from the smart contract `nameofthecontract`
 Now you can use 
 ```const someAction = nameofthecontract.nameOfTheAction(authorizationsArray,actionData)``` 
 where both `authorizationsArray` and `actionData` are typed accordingly to the ABI file
