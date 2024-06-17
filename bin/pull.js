@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv").config();
 const { Command } = require("commander");
+const axios = require('axios').default;
 const { RpcInterfaces, Serialize, Api } = require("eosjs");
 const packageJson = require("../package.json");
 const fs = require("fs");
-const TN_EP = 'https://tn1.protonnz.com';
-const MN_EP = 'https://api.protonnz.com';
+const TN_EP = 'https://testnet.rockerone.io';
+const MN_EP = 'https://api.rockerone.io';
 const program = new Command();
 const typesMaps = [
     {
@@ -44,29 +46,41 @@ const MODULE_FIELD_TEMPLATE = (module, content, level = 0) => `export type ${mod
 const ACTIONS_TYPE_TEMPLATE = (contractName, content) => `export const ${contractName} = {\n ${content} \n} `;
 const ACTION_FUNCTION_TEMPLATE = (contractName, actionName) => ` ${actionName.replace('.', '_')}:(authorization:Authorization[],data:${contractName}_Actions['${actionName}']):XPRAction<'${actionName}'>=>({\n\taccount:'${contractName}',\n\tname:'${actionName}',\n\tauthorization,\n\data})`;
 async function loadAbi(account_name, rpcUrl) {
-    return fetch(`${rpcUrl}/v1/chain/get_abi`, {
-        method: "POST",
-        body: JSON.stringify({
+    return axios({
+        method: 'post',
+        url: `${rpcUrl}/v1/chain/get_abi`,
+        data: {
             account_name,
-        }),
-    })
-        .then(async (res) => {
-        const response = await res.json();
-        return {
-            account_name,
-            abi: { ...response.abi },
-        };
-    })
-        .catch(e => {
-        console.log("Error while fetching the ABI");
-        return null;
-    });
+        }
+    }).then((data) => ({
+        account_name,
+        abi: { ...data.data.abi },
+    }));
+    // return fetch(`${rpcUrl}/v1/chain/get_abi`, {
+    //   cache:'no-cache',
+    //   headers:myHeaders,
+    //   method: "POST",
+    //   body: JSON.stringify({
+    //     account_name,
+    //     r:now
+    //   }),
+    // })
+    //   .then(async res => {
+    //     const response = await res.json();
+    //     return {
+    //       account_name,
+    //       abi: {...response.abi},
+    //     };
+    //   })
+    //   .catch(e => {
+    //     console.log("Error while fetching the ABI");
+    //     return null
+    //   });
 }
 async function loadLocalAbi(account_name, abi_path) {
     return new Promise((resolve, reject) => {
         fs.readFile(abi_path, "utf8", (error, data) => {
             if (error) {
-                console.log(error);
                 return reject(null);
             }
             return resolve({
@@ -77,7 +91,7 @@ async function loadLocalAbi(account_name, abi_path) {
     });
 }
 function getFields(lookupField, abiStructs) {
-    const findStruct = abiStructs.findLast((struct) => struct.name.indexOf(lookupField) > -1);
+    const findStruct = abiStructs.findLast((struct) => struct.name == lookupField);
     if (!findStruct)
         return [];
     return findStruct.fields.map((field) => {
@@ -93,13 +107,8 @@ function transformType(type, abiStructs) {
     if (foundMap) {
         return `${foundMap.target}${suffix}`;
     }
-    const customType = getFields(rawType, abiStructs);
+    const customType = getFields(type, abiStructs);
     return `{\n  ${customType.join(";\n")}  \n}${suffix}`;
-}
-//TODO create a template string const function
-function formatCustomFields(field, isArray) {
-    const suffix = isArray ? "[]" : "";
-    return `{\n      ${field.join(",\n    ")}\n      }${suffix}`;
 }
 //TODO create a template string const function
 function formatDefinition(definitionName, field) {
@@ -136,7 +145,6 @@ program
         ? TN_EP
         : MN_EP;
     let abi = (options.file) ? await loadLocalAbi(name, options.file) : await loadAbi(name, endpoint);
-    console.log(abi);
     if (!abi)
         return;
     const actionDefinitions = abi.abi.actions
@@ -172,5 +180,6 @@ program
   `);
     console.log(`export type Tables<TableName extends keyof (${name}_Tables)> = ${name}_Tables[TableName];`);
     console.log(`export type Actions<ActionName extends keyof (${name}_Actions)> = ${name}_Actions[ActionName];`);
+    console.log(`export function ${name}_actionParams<ActionName extends keyof (${name}_Actions)>(actionPrams: ${name}_Actions[ActionName]):(object|number|string |number[]|string[])[]{return Object.values(actionPrams)}`);
 })
     .parse(process.argv);

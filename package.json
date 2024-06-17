@@ -1,6 +1,6 @@
 {
   "name": "@rockerone/abi2ts",
-  "version": "0.0.8",
+  "version": "0.1.2",
   "description": "A little supa dupa usefull CLI tool for XPR that allow you to generates TS types from Smart contract ABI",
   "main": "dist/pull.js",
   "author": "RockerOne",
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@proton/js": "^28.0.0",
+    "axios": "^1.6.8",
     "commander": "^12.0.0",
     "dotenv": "^16.4.5",
     "eosjs": "^22.1.0",

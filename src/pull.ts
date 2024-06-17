@@ -1,12 +1,16 @@
 #!/usr/bin/env node
+
+import { AxiosResponse } from "axios";
+
 require("dotenv").config();
 const {Command} = require("commander");
+const axios =  require('axios').default;
 const {RpcInterfaces, Serialize, Api} = require("eosjs");
 const packageJson = require("../package.json");
 const fs = require("fs");
 
-const TN_EP = 'https://tn1.protonnz.com';
-const MN_EP = 'https://api.protonnz.com';
+const TN_EP = 'https://testnet.rockerone.io';
+const MN_EP = 'https://api.rockerone.io';
 
 const program = new Command();
 
@@ -64,24 +68,42 @@ const ACTION_FUNCTION_TEMPLATE = (contractName:string,actionName:string,) => ` $
 async function loadAbi(
   account_name: string,
   rpcUrl: string
-):  Promise<AbiResponse | null> {
-  return fetch(`${rpcUrl}/v1/chain/get_abi`, {
-    method: "POST",
-    body: JSON.stringify({
+): Promise<AbiResponse | null> {
+  
+
+  return axios({
+    method: 'post',
+    
+    url: `${rpcUrl}/v1/chain/get_abi`,
+    data: {
       account_name,
-    }),
-  })
-    .then(async res => {
-      const response = await res.json();
-      return {
-        account_name,
-        abi: {...response.abi},
-      };
-    })
-    .catch(e => {
-      console.log("Error while fetching the ABI");
-      return null
-    });
+      
+    }
+  }).then((data:AxiosResponse)=>({
+    account_name,
+    abi: {...data.data.abi},
+  }))
+  
+  // return fetch(`${rpcUrl}/v1/chain/get_abi`, {
+  //   cache:'no-cache',
+  //   headers:myHeaders,
+  //   method: "POST",
+  //   body: JSON.stringify({
+  //     account_name,
+  //     r:now
+  //   }),
+  // })
+  //   .then(async res => {
+  //     const response = await res.json();
+  //     return {
+  //       account_name,
+  //       abi: {...response.abi},
+  //     };
+  //   })
+  //   .catch(e => {
+  //     console.log("Error while fetching the ABI");
+  //     return null
+  //   });
 }
 
 async function loadLocalAbi(account_name: string, abi_path: string): Promise<AbiResponse | null> {
@@ -90,7 +112,6 @@ async function loadLocalAbi(account_name: string, abi_path: string): Promise<Abi
    
     fs.readFile(abi_path, "utf8", (error:any, data:string) => {
       if (error) {
-        console.log(error);
         return reject(null);
       }
       
@@ -108,7 +129,7 @@ async function loadLocalAbi(account_name: string, abi_path: string): Promise<Abi
 
 function getFields(lookupField: string, abiStructs: any) {
   const findStruct = abiStructs.findLast(
-    (struct: any) => struct.name.indexOf(lookupField) > -1
+    (struct: any) => struct.name == lookupField
   );
   if (!findStruct) return [];
   return findStruct.fields.map((field: {name: string; type: string}) => {
@@ -129,15 +150,10 @@ function transformType(type: string, abiStructs: any): string {
   if (foundMap) {
     return `${foundMap.target}${suffix}`;
   }
-  const customType = getFields(rawType, abiStructs);
+  const customType = getFields(type, abiStructs);
   return `{\n  ${customType.join(";\n")}  \n}${suffix}`;
 }
 
-//TODO create a template string const function
-function formatCustomFields(field: string[], isArray: boolean): string {
-  const suffix = isArray ? "[]" : "";
-  return `{\n      ${field.join(",\n    ")}\n      }${suffix}`;
-}
 
 //TODO create a template string const function
 function formatDefinition(definitionName: string, field: string[]): string {
@@ -183,8 +199,7 @@ program
       : MN_EP!;
 
       let abi:AbiResponse | null = (options.file) ? await loadLocalAbi(name, options.file) : await loadAbi(name, endpoint);
-      console.log(abi)
-    if (!abi) return;
+      if (!abi) return;
     
     const actionDefinitions = abi.abi.actions
       .map((action: any) => {
@@ -233,6 +248,9 @@ program
     );
     console.log(
       `export type Actions<ActionName extends keyof (${name}_Actions)> = ${name}_Actions[ActionName];`
+    );
+    console.log(
+      `export function ${name}_actionParams<ActionName extends keyof (${name}_Actions)>(actionPrams: ${name}_Actions[ActionName]):(object|number|string |number[]|string[])[]{return Object.values(actionPrams)}`
     );
   })
   .parse(process.argv);
