@@ -44,7 +44,7 @@ const typesMaps = [
 const TYPE_FIELD_TEMPLATE = (name, type, level = 0) => `${name}:${type}`.padStart(level, "  ");
 const MODULE_FIELD_TEMPLATE = (module, content, level = 0) => `export type ${module} = {${content}}`.padStart(level, "  ");
 const ACTIONS_TYPE_TEMPLATE = (contractName, content) => `export const ${contractName} = {\n ${content} \n} `;
-const ACTION_FUNCTION_TEMPLATE = (contractName, actionName) => ` ${actionName.replace('.', '_')}:(authorization:Authorization[],data:${contractName}_Actions['${actionName}']):XPRAction<'${actionName}'>=>({\n\taccount:'${contractName}',\n\tname:'${actionName}',\n\tauthorization,\n\data})`;
+const ACTION_FUNCTION_TEMPLATE = (contractName, name, actionName) => ` ${actionName.replace('.', '_')}:(authorization:Authorization[],data:${name}_Actions['${actionName}']):XPRAction<'${actionName}'>=>({\n\taccount:'${contractName}',\n\tname:'${actionName}',\n\tauthorization,\n\data})`;
 async function loadAbi(account_name, rpcUrl) {
     return axios({
         method: 'post',
@@ -119,8 +119,8 @@ function formatDefinition(definitionName, field) {
     str += "\n  }";
     return str;
 }
-function formateActionsFunction(contractName, actionName) {
-    return ACTION_FUNCTION_TEMPLATE(contractName, actionName);
+function formateActionsFunction(contractName, name, actionName) {
+    return ACTION_FUNCTION_TEMPLATE(contractName, name, actionName);
 }
 function wrapActionsModule(contractName, content) {
     return ACTIONS_TYPE_TEMPLATE(contractName, content);
@@ -139,12 +139,14 @@ program
     .description("Description of your CLI tool")
     .option("-t, --testnet")
     .option("-f, --file <char>")
-    .arguments("<name>")
-    .action(async (name, options) => {
+    .option("-r, --rename <char>")
+    .arguments("<contract>")
+    .action(async (contract, options) => {
     const endpoint = options.testnet
         ? TN_EP
         : MN_EP;
-    let abi = (options.file) ? await loadLocalAbi(name, options.file) : await loadAbi(name, endpoint);
+    const name = options.rename ? options.rename : contract;
+    let abi = (options.file) ? await loadLocalAbi(contract, options.file) : await loadAbi(contract, endpoint);
     if (!abi)
         return;
     const actionDefinitions = abi.abi.actions
@@ -155,7 +157,7 @@ program
     console.log(wrapTypes(`${name}_Actions`, actionDefinitions));
     const actionFunctionsDefinitions = abi.abi.actions
         .map((action) => {
-        return formateActionsFunction(name, action.name);
+        return formateActionsFunction(contract, name, action.name);
     })
         .join(",\n");
     console.log(wrapActionsModule(name, actionFunctionsDefinitions));
@@ -172,7 +174,7 @@ program
   }`);
     console.log(`
     export type XPRAction<A extends keyof (${name}_Actions)>={
-      account: '${name}';
+      account: '${contract}';
       name: A;
       authorization: Authorization[];
       data: ${name}_Actions[A]; 
