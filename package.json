@@ -1,13 +1,15 @@
 {
   "name": "@rockerone/abi2ts",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "A little supa dupa usefull CLI tool for XPR that allow you to generates TS types from Smart contract ABI",
-  "main": "dist/pull.js",
+  "main": "dist/cli.js",
   "author": "RockerOne",
   "license": "MIT",
   "private": false,
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@proton/js": "^28.0.0",
@@ -19,6 +21,9 @@
     "typescript": "^5.4.2"
   },
   "bin": {
-    "abi2ts": "bin/pull.js"
+    "abi2ts": "bin/cli.js"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18"
   }
 }
